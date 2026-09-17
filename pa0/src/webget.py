@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import socket
 import sys
+import socket
 
 DEFAULT_PORT = 80
 RECV_CHUNK_SIZE = 4096
@@ -27,18 +28,22 @@ def get_url(host: str, path: str, port: int = DEFAULT_PORT, timeout: float = DEF
     You must implement this function using Python's ``socket`` module. Do not use
     higher-level HTTP clients such as urllib, http.client, requests, aiohttp, etc.
     """
-    # TODO: PA0
-    # 1. Validate/normalize the path as required by the handout.
-    # 2. Construct an HTTP/1.1 GET request. 
-    #    - Every request line/header line ends with CRLF ("\r\n")
-    #    - The headers end with an extra blank line.
-    #    - Host contains "host" on port 80 and "host:port" otherwise
-    # 3. Open a TCP connection to (host, port).
-    # 4. Send the complete request.
-    # 5. Repeatedly receive bytes until recv() returns b"" (EOF).
-    # 6. Return all received bytes, in order.
-    raise NotImplementedError("Complete get_url() for PA0")
 
+    if len(path) == 0 or path[0] != '/':
+        raise ValueError("path must start with '/'")
+
+    port_header = f":{port}" if port != DEFAULT_PORT else ""
+    request = f"GET {path} HTTP/1.1\r\nHost: {host}{port_header}\r\nConnection: close\r\n\r\n"
+    request_bytes = request.encode()
+    response = bytearray(b'')
+
+    with socket.create_connection((host, port), timeout) as server_socket:
+        server_socket.sendall(request_bytes)
+        while True:
+            chunk = server_socket.recv(RECV_CHUNK_SIZE);
+            if chunk == b'':
+                return bytes(response)
+            response.extend(chunk)
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
